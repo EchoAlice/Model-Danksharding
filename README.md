@@ -7,8 +7,9 @@ m of n chunks can recreate the original file.  This technique is called erasure 
 The original file can be represented as an integer, then separated into chunks.  The integer chunks can then be used to create a UNIQUE polynomial,
 abstractly representing the data to be stored. Create the polynomial via systems of equations or lagrange interpolation (haven't implemented lagrange
 interpolation yet).
-If you know the polynomial and the x coordinates that map to original file (the y coordinates),
-you can reconstruct the file by evaluating the polynomial at those x coordinates!
+If you know the x coordinates that map to original file (the y coordinates), 
+you can reconstruct the file by first recreating the polynomial with any m of n chunks that have been distributed among a network, 
+then evaluating the polynomial at the x coordinates!
 
 Within the code, equations are represented as a list of coefficients followed by the y
 coordinate transposed to the left side of the equation (y isn't represented within polynomial).
