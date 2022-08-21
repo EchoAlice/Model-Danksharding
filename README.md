@@ -1,8 +1,14 @@
 Based off of Vitalik's blog post:
 https://blog.ethereum.org/2014/08/16/secret-sharing-erasure-coding-guide-aspiring-dropbox-decentralizer/
 
-This project is based off of Vitalik's blog post. It attempts to create a script that separates and encodes a file into n chunks, such that any m of n chunks can recreate the original file.  This technique is called erasure coding and allows for decentralized data storage (Ethereum uses this technique for data availability sampling). 
+This project is based off of Vitalik's blog post. It attempts to create a script that separates and encodes a file into n chunks, such that any 
+m of n chunks can recreate the original file.  This technique is called erasure coding and has a bunch of cool use cases in the blockchain world. 
 
+The original file can be represented as an integer, then separated into chunks.  The integer chunks can then be used to create a UNIQUE polynomial,
+abstractly representing the data to be stored. Create the polynomial via systems of equations or lagrange interpolation (haven't implemented lagrange
+interpolation yet).
+If you know the polynomial and the x coordinates that map to original file (the y coordinates),
+you can reconstruct the file by evaluating the polynomial at those x coordinates!
 
 Within the code, equations are represented as a list of coefficients followed by the y
 coordinate transposed to the left side of the equation (y isn't represented within polynomial).
