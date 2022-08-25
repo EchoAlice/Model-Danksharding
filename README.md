@@ -12,3 +12,8 @@ this unique polynomial to given points is called lagrange interpolation.
 If you know the x coordinates that map to the original file (the y coordinates), 
 you can reconstruct the file by first recreating the polynomial with any m of n chunks that have been distributed among a network, 
 then evaluating the polynomial at the file's known x coordinates!
+
+** TO DO: **
+- Create nodes that display functionality
+- Write more tests
+- Create CLI tool for users to send file to be encoded
