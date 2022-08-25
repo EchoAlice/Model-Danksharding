@@ -24,9 +24,9 @@ def operate_on_list(list, operation):
     list.pop(-1)
     return operate_on_list(list, operation)
 
-# ========
-# Lagrange
-# ========
+
+# Creates set of cubic polynomials that represent each file chunk, then adds all polynomials together,
+# making a polynomial that uniquely represents the points given
 def lagrange_interpolation(points):
   polynomials = []
   final_form_polynomials = [] 
@@ -36,6 +36,7 @@ def lagrange_interpolation(points):
   final_polynomial = operate_on_list(final_form_polynomials, add)
   return final_polynomial 
 
+# Creates a cubic polynomial whose valie is 1 at the x in question and 0 at all other x's
 def one_and_zeros_polynomial(x_in_question, points):
   basic_polynomial = []
   for i in range(2):
@@ -50,9 +51,8 @@ def one_and_zeros_polynomial(x_in_question, points):
   return basic_polynomial
 
 def extrapolate_points(polynomial, x_coordinates):
-  # Should I create points (x and y) or file chunks (just y) 
   extended_file_chunks = [] 
   for x_coordinate in x_coordinates: 
     y = polynomial.subs({x:x_coordinate})
-    extended_file_chunks.append(y)
+    extended_file_chunks.append((x_coordinate,y))
   return extended_file_chunks 
