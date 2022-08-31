@@ -1,20 +1,40 @@
-from helper import ( extrapolate_points,
-                     lagrange_interpolation,
+from config import ( original_points,
+                     x_extension,
+)
+from helper import ( create_nodes,
+                     distribute_file_chunks,
+                     erasure_encode, 
 )
 
-file = "1321"
-file_chunks = [int(c) for c in file]
-x_coordinates_for_original_file = [1,2,3,4]  
-x_coordinates_for_duplication = [5,6,7,8]
-original_points = list(zip(x_coordinates_for_original_file, file_chunks))
 
-def erasure_encode(points, x_coordinates_duplicate):   
-  polynomial = lagrange_interpolation(points)    
-  extended_points = extrapolate_points(polynomial, x_coordinates_duplicate)
-  return extended_points
+extended_points = erasure_encode(original_points, x_extension)
+points = original_points + extended_points
+empty_nodes = create_nodes() 
+populated_nodes = distribute_file_chunks(empty_nodes, points)
 
-# Proof of concept
-extended_points = erasure_encode(original_points, x_coordinates_for_duplication)
-original_points_derived = erasure_encode(extended_points, x_coordinates_for_original_file)
-assert original_points_derived == original_points
-print("Tah dahhh")
+for node in populated_nodes:
+  print(node.file_chunks)
+
+# reconstruct_file(nodes)
+
+
+
+
+
+
+
+
+
+# Proof of concept:
+#
+#   - Extended_points created from original points and used to reconstruct the polynomial 
+#     used to recover original file 
+#
+#   - Encorperate node logic
+
+# extended_points = erasure_encode(original_points, x_extension)
+# print(extended_points)
+# original_points_derived = erasure_encode(extended_points, x_coordinates_for_original_file)
+
+# assert original_points_derived == original_points
+# print("Tah dahhh")
