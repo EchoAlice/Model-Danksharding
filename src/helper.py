@@ -1,6 +1,5 @@
-from config import ( copy,
-                     secrets,
-                     sym,
+import secrets
+from config import ( sym,
                      chunks_per_node,
                      number_of_nodes,
                      x,
@@ -9,7 +8,6 @@ from config import ( copy,
 # ===============
 # Basic Functions
 # ===============
-
 def add(a,b):
   return a+b 
 
@@ -33,28 +31,23 @@ def operate_on_list(list, operation):
     list.pop(-1)
     return operate_on_list(list, operation)
 
-
-
-# ==============
-# Erasure Encode
-# ==============
-
-def erasure_encode(original_points, x_coordinates_extend) -> list:   
+# ============
+# Erasure Code
+# ============
+def erasure_code(original_points, x_coordinates_for_new_points) -> list:   
   polynomial = lagrange_interpolation(original_points)    
   
   # Make sure there are enough x_coordinates_extend to recover original file. 
-  assert len(x_coordinates_extend) >= len(original_points)
+  assert len(x_coordinates_for_new_points) >= len(original_points)
   
-  extended_points = extrapolate_points(polynomial, x_coordinates_extend)
-  return extended_points
-
-
+  new_points = extrapolate_points(polynomial, x_coordinates_for_new_points)
+  return new_points
 
 # ==============
 # Lagrange Logic
 # ==============
 
-# Creates set of cubic polynomials that represent each file chunk, then adds all polynomials together,
+# Creates set of polynomials that represent each file chunk, then adds all polynomials together,
 # making a polynomial that uniquely represents the points given
 def lagrange_interpolation(points):
   polynomials = []
@@ -65,7 +58,7 @@ def lagrange_interpolation(points):
   final_polynomial = operate_on_list(final_form_polynomials, add)
   return final_polynomial 
 
-# Creates a cubic polynomial whose valie is 1 at the x in question and 0 at all other x's
+# Creates a polynomial whose value is 1 at the x in question and 0 at all other x's
 def one_and_zeros_polynomial(x_in_question, points):
   basic_polynomial = []
   for i in range(2):
@@ -86,22 +79,25 @@ def extrapolate_points(polynomial, x_coordinates):
     extended_file_chunks.append((x_coordinate,y))
   return extended_file_chunks
 
-
-
 # ==========
 # Node Logic 
 # ==========
 class Node:
-  def __init__(self):
+  def __init__(self, index):
+    self.index = index 
     self.file_chunks = []
 
   def add_chunk(self, chunk):
     self.file_chunks.append(chunk)
 
+  def pop_chunk(self, chunk_index):
+    self.file_chunks.pop(chunk_index)
+
+
 def create_nodes() -> list[Node]:
   nodes = [] 
   for i in range(number_of_nodes):
-    nodes.append(Node())  
+    nodes.append(Node(i))  
   return nodes 
 
 # Distribute file chunks explicitely to insure there isn't too much redundancy
@@ -112,4 +108,37 @@ def distribute_file_chunks(nodes, n_file_chunks) -> list:
       i = chunk_increment % 8 
       nodes[n].add_chunk(n_file_chunks[i]) 
       chunk_increment += 1
-  return nodes 
+  return nodes
+
+def reconstruct_file(full_nodes, x_coordinates_for_original_file):
+  encoded_file_chunks = [] 
+  
+  while len(encoded_file_chunks) < len(x_coordinates_for_original_file): 
+    node_in_question = secrets.choice(full_nodes)
+    if len(node_in_question.file_chunks) > 0:
+      random_chunk_index = secrets.randbelow(len(node_in_question.file_chunks))
+      chunk_in_question = node_in_question.file_chunks[random_chunk_index]
+      if redundancy_algorithm(chunk_in_question, encoded_file_chunks) == False:
+        encoded_file_chunks.append(chunk_in_question)
+        node_in_question.pop_chunk(random_chunk_index)
+
+  print("Encoded file chunks: "+str(encoded_file_chunks))
+  original_points = erasure_code(encoded_file_chunks, x_coordinates_for_original_file)    
+  original_file = points_to_string(original_points) 
+  
+  return original_file 
+
+# Make this thing a lot cooler... Right now, the algorithm scales linearly.  No bueno 
+def redundancy_algorithm(chunk_in_question, encoded_file_chunks) -> bool:
+  if len(encoded_file_chunks) > 0: 
+    for i in range(len(encoded_file_chunks)):
+      if chunk_in_question == encoded_file_chunks[i]:  
+        return True
+  return False   
+
+def points_to_string(points):
+  file_list = [] 
+  for point in points:
+    file_list.append(str(point[1])) 
+  file = ''.join(file_list)
+  return file

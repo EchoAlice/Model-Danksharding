@@ -33,6 +33,25 @@ def test_one_and_zeros_polynomial(x_in_question, points):
   assert y == 1 and sum_all_other_evaluated_polynomials == 0
 
 
-# ============================================
-#  Write more tests for lagrange functions!!! 
-# ============================================
+# ==========================
+#  Tests for Lagrange Logic 
+# ==========================
+
+
+
+
+
+# ======================
+#  Tests for Node Logic
+# ======================
+
+# Error messages that have occured within reconstruct_file():
+'''
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.10_3.10.1776.0_x64__qbz5n2kfra8p0\lib\secrets.py", line 29, in randbelow
+    raise ValueError("Upper bound must be positive.")
+
+
+  File "C:\Users\broycro\Desktop\Programming\erasure-coding\src\helper.py", line 149, in reconstruct_file
+    full_nodes.pop(node_in_question.index)
+IndexError: pop index out of range
+'''
