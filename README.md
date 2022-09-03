@@ -1,8 +1,10 @@
-**Getting Started**\
-Enter in CLI:\ 
+**Getting Started**
+
+Enter in CLI: 
 pip install -r requirements.txt
 
-**Importance of Erasure/Reed Solomon Coding**\
+**Importance of Erasure/Reed Solomon Coding**
+
 Based off of Vitalik's blog post: \
 https://blog.ethereum.org/2014/08/16/secret-sharing-erasure-coding-guide-aspiring-dropbox-decentralizer/
 
@@ -12,7 +14,7 @@ coding makes it impossible for an individual to withhold even a single bit of in
 detect foul play.
 My project implements this technique. 
 
-**Summary of Project**\
+**Summary of Project**
 
 A string of numbers is passed in as the data we wish to encode.  This string is broken up into m chunks and then converted into points (the string ints
 we care about are the y-coordinates, each cooresponding x-coordinates consisting of integers 1 -> m) that a can 
