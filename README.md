@@ -1,17 +1,18 @@
-**Getting Started**
-Enter in CLI:    pip install -r requirements.txt
+**Getting Started**\
+Enter in CLI:\ 
+pip install -r requirements.txt
 
-**Importance of Erasure/Reed Solomon Coding**
-Based off of Vitalik's blog post:
+**Importance of Erasure/Reed Solomon Coding**\
+Based off of Vitalik's blog post: \
 https://blog.ethereum.org/2014/08/16/secret-sharing-erasure-coding-guide-aspiring-dropbox-decentralizer/
 
 Erasure/Reed Solomon coding is a technique that separates data of m chunks and encodes these into n chunks, such that any m of n chunks can be used 
 to recreate the original data.  This concept is employed by Ethereum to make data availability sampling of blobs feasible for sharding.  Erasure
 coding makes it impossible for an individual to withhold even a single bit of information without anyone requesting this information to be able to
 detect foul play.
-
-**Summary of Project**
 My project implements this technique. 
+
+**Summary of Project**\
 
 A string of numbers is passed in as the data we wish to encode.  This string is broken up into m chunks and then converted into points (the string ints
 we care about are the y-coordinates, each cooresponding x-coordinates consisting of integers 1 -> m) that a can 
@@ -28,9 +29,11 @@ of nodes to recreate the polynomial.  By knowing the x coordinates for the point
 polynomial at these x coordinates to recover the original file!
 
 **TO DO:**
-- Create CLI tool for users to send:  1. String to be encoded
-                                      2. Number of Nodes in the network
-                                      3. Probability of a node to be down
- 
+- Create CLI tool for users to send: \ 
+    1. String to be encoded\
+    2. Number of Nodes in the network\
+    3. Probability of a node to be down\
+
+- Make logic that requires user to specify number of nodes and storage >= nodes and storage necessary to reconstruct string
 - Incorperate encryption of data before sending it to nodes
 - Allow for files to be encoded
