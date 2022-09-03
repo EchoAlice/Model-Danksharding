@@ -31,10 +31,10 @@ of nodes to recreate the polynomial.  By knowing the x coordinates for the point
 polynomial at these x coordinates to recover the original file!
 
 **TO DO:**
-- Create CLI tool for users to send: \ 
-    1. String to be encoded\
-    2. Number of Nodes in the network\
-    3. Probability of a node to be down\
+- Create CLI tool for users to send:  
+    1. String to be encoded
+    2. Number of Nodes in the network
+    3. Probability of a node to be down
 
 - Make logic that requires user to specify number of nodes and storage >= nodes and storage necessary to reconstruct string
 - Incorperate encryption of data before sending it to nodes
