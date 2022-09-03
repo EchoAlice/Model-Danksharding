@@ -1,6 +1,6 @@
 **Getting Started**
 
-Enter in CLI:\ 
+Enter in CLI:    \ 
 pip install -r requirements.txt
 
 **Importance of Erasure/Reed Solomon Coding**
