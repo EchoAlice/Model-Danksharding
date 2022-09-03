@@ -1,6 +1,6 @@
 **Getting Started**
 
-Enter in CLI: 
+Enter in CLI:\ 
 pip install -r requirements.txt
 
 **Importance of Erasure/Reed Solomon Coding**
@@ -31,11 +31,7 @@ of nodes to recreate the polynomial.  By knowing the x coordinates for the point
 polynomial at these x coordinates to recover the original file!
 
 **TO DO:**
-- Create CLI tool for users to send:  
-    1. String to be encoded
-    2. Number of Nodes in the network
-    3. Probability of a node to be down
-
-- Make logic that requires user to specify number of nodes and storage >= nodes and storage necessary to reconstruct string
+- Create conditional statements for user input
+- Allow for any string of characters to be used as input 
 - Incorperate encryption of data before sending it to nodes
-- Allow for files to be encoded
+- Allow small files to be encoded

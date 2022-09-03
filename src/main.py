@@ -1,22 +1,24 @@
-from helper import ( create_nodes,
-                     convert_input,
+from helper import ( convert_node_input,
+                     convert_string_input,
                      distribute_file_chunks,
                      erasure_code,
                      reconstruct_file,
 )
 
+
 # Ask user for string to encode and factor to extend data by
-beginning_points, string_input, x_original, x_extension  = convert_input() 
+beginning_points, string_input, x_original, x_extension  = convert_string_input() 
 
-# Create extended points (aka file chunks)
+# Extend data
 extended_points = erasure_code(beginning_points, x_extension)
-points = beginning_points + extended_points
+all_points = beginning_points + extended_points
 
-# Create nodes that store file chunks 
-empty_nodes = create_nodes() 
-full_nodes = distribute_file_chunks(empty_nodes, points)
+# Distribute data amongst nodes and wipe out memory of points
+instantiated_nodes, chunks_per_node = convert_node_input(all_points)
+full_nodes = distribute_file_chunks(instantiated_nodes, all_points, chunks_per_node)
+all_points = 420
 
-# Reconstruct file from any m file chunks within nodes.  Maybe move randomization logic out here?
+# Reconstruct file from any m of n file chunks
 reconstructed_file = reconstruct_file(full_nodes, x_original)
 
 assert reconstructed_file == string_input

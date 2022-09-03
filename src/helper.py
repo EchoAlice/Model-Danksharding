@@ -1,11 +1,24 @@
+import math
 import secrets
 import sympy as sym
 x = sym.Symbol('x')
 
 # Turn these variables into user generated, CLI inputs 
-number_of_nodes = 5
-chunks_per_node = 2
 probability_node_is_down = 0.1
+
+# ==========
+# Node Class 
+# ==========
+class Node:
+  def __init__(self, index):
+    self.index = index 
+    self.file_chunks = []
+
+  def add_chunk(self, chunk):
+    self.file_chunks.append(chunk)
+
+  def pop_chunk(self, chunk_index):
+    self.file_chunks.pop(chunk_index)
 
 # ===============
 # Basic Functions
@@ -36,8 +49,7 @@ def operate_on_list(list, operation):
 # ===========
 # Input Logic 
 # ===========
-# Make sure these things have conditions to protect us from weird things happening
-def convert_input():
+def convert_string_input():
   string_input = input('Enter a string of numbers to encode: ')
   factor_of_extension = int(input('Enter factor (integer) to extend data by: '))
 
@@ -48,6 +60,18 @@ def convert_input():
   x_extension = [x for x in range(m+1, n+1)] 
   beginning_points = list(zip(x_original, file_chunks))
   return beginning_points, string_input, x_original, x_extension
+
+def convert_node_input(all_points):
+  number_of_nodes = int(input('Number of Nodes: '))
+  chunks_per_node = int(input('Chunks per node: '))
+  # probability_node_down = input('Probability node is down: ')  #  <---- Encorperate this one later
+  
+  min_number_of_nodes = math.ceil(len(all_points)/chunks_per_node)    
+  if number_of_nodes >= min_number_of_nodes:
+    return create_nodes(number_of_nodes), chunks_per_node
+  else:
+    print('Not enough storage available to reconstruct data...  Creating minimum number of nodes given chunks per node.') 
+    return create_nodes(min_number_of_nodes), chunks_per_node 
 
 # =============
 # Erasure Logic
@@ -99,31 +123,20 @@ def extrapolate_points(polynomial, x_coordinates):
 # ==========
 # Node Logic 
 # ==========
-class Node:
-  def __init__(self, index):
-    self.index = index 
-    self.file_chunks = []
-
-  def add_chunk(self, chunk):
-    self.file_chunks.append(chunk)
-
-  def pop_chunk(self, chunk_index):
-    self.file_chunks.pop(chunk_index)
-
-
-def create_nodes() -> list[Node]:
+def create_nodes(number_of_nodes) -> list[Node]:
   nodes = [] 
   for i in range(number_of_nodes):
     nodes.append(Node(i))  
   return nodes 
 
 # Distribute file chunks explicitely to insure there isn't too much redundancy
-def distribute_file_chunks(nodes, n_file_chunks) -> list:                    
+# Make sure calculations are tied back to user input 
+def distribute_file_chunks(nodes, all_points, chunks_per_node) -> list[Node]:                    
   chunk_increment = 0
-  for c in range(chunks_per_node): 
-    for n in range(number_of_nodes):
-      i = chunk_increment % 8 
-      nodes[n].add_chunk(n_file_chunks[i]) 
+  for c in range(chunks_per_node):           
+    for n in range(len(nodes)):
+      i = chunk_increment % len(all_points) 
+      nodes[n].add_chunk(all_points[i]) 
       chunk_increment += 1
   return nodes
 
@@ -131,9 +144,6 @@ def reconstruct_file(full_nodes, x_coordinates_for_original_file):
   encoded_file_chunks = [] 
   
   while len(encoded_file_chunks) < len(x_coordinates_for_original_file): 
-    for node in full_nodes:
-      print(node.file_chunks) 
-    
     node_in_question = secrets.choice(full_nodes)
     if len(node_in_question.file_chunks) > 0:
       random_chunk_index = secrets.randbelow(len(node_in_question.file_chunks))
