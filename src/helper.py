@@ -1,9 +1,11 @@
 import secrets
-from config import ( sym,
-                     chunks_per_node,
-                     number_of_nodes,
-                     x,
-)
+import sympy as sym
+x = sym.Symbol('x')
+
+# Turn these variables into user generated, CLI inputs 
+number_of_nodes = 5
+chunks_per_node = 2
+probability_node_is_down = 0.1
 
 # ===============
 # Basic Functions
@@ -31,9 +33,25 @@ def operate_on_list(list, operation):
     list.pop(-1)
     return operate_on_list(list, operation)
 
-# ============
-# Erasure Code
-# ============
+# ===========
+# Input Logic 
+# ===========
+# Make sure these things have conditions to protect us from weird things happening
+def convert_input():
+  string_input = input('Enter a string of numbers to encode: ')
+  factor_of_extension = int(input('Enter factor (integer) to extend data by: '))
+
+  file_chunks = [int(c) for c in string_input]
+  x_original = [x for x in range(1, len(file_chunks)+1)]       
+  m = x_original[-1]
+  n = m*factor_of_extension
+  x_extension = [x for x in range(m+1, n+1)] 
+  beginning_points = list(zip(x_original, file_chunks))
+  return beginning_points, string_input, x_original, x_extension
+
+# =============
+# Erasure Logic
+# =============
 def erasure_code(original_points, x_coordinates_for_new_points) -> list:   
   polynomial = lagrange_interpolation(original_points)    
   
@@ -46,7 +64,6 @@ def erasure_code(original_points, x_coordinates_for_new_points) -> list:
 # ==============
 # Lagrange Logic
 # ==============
-
 # Creates set of polynomials that represent each file chunk, then adds all polynomials together,
 # making a polynomial that uniquely represents the points given
 def lagrange_interpolation(points):
@@ -114,6 +131,9 @@ def reconstruct_file(full_nodes, x_coordinates_for_original_file):
   encoded_file_chunks = [] 
   
   while len(encoded_file_chunks) < len(x_coordinates_for_original_file): 
+    for node in full_nodes:
+      print(node.file_chunks) 
+    
     node_in_question = secrets.choice(full_nodes)
     if len(node_in_question.file_chunks) > 0:
       random_chunk_index = secrets.randbelow(len(node_in_question.file_chunks))
