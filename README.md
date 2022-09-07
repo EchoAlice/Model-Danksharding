@@ -3,6 +3,9 @@
 Enter in CLI:                      
 pip install -r requirements.txt
 
+Working Directory and command to execute:             
+./erasure-coding$     python ./src/main.py
+
 **Importance of Erasure/Reed Solomon Coding**
 
 Based off of Vitalik's blog post: \
@@ -32,6 +35,6 @@ polynomial at these x coordinates to recover the original file!
 
 **TO DO:**
 - Create conditional statements for user input
-- Allow for any string of characters to be used as input 
 - Incorperate encryption of data before sending it to nodes
+- Optimize the heck out of this
 - Allow small files to be encoded
