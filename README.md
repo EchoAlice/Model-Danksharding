@@ -35,6 +35,6 @@ polynomial at these x coordinates to recover the original file!
 
 **TO DO:**
 - Create conditional statements for user input
-- Incorperate encryption of data before sending it to nodes
+- Incorporate encryption of data before sending it to nodes
 - Optimize the heck out of this
 - Allow small files to be encoded

@@ -2,7 +2,8 @@ from helper import ( convert_node_input,
                      convert_string_input,
                      distribute_file_chunks,
                      erasure_code,
-                     reconstruct_file,
+                     gather_chunks,
+                     points_to_string,
 )
 
 
@@ -18,8 +19,10 @@ instantiated_nodes, chunks_per_node = convert_node_input(all_points)
 full_nodes = distribute_file_chunks(instantiated_nodes, all_points, chunks_per_node)
 all_points = 420
 
-# Reconstruct file from any m of n file chunks
-reconstructed_file = reconstruct_file(full_nodes, x_original)
+# Reconstruct file from any m of n file chunks distributed amongst nodes
+points_for_reconstruction = gather_chunks(full_nodes, x_original)
+original_points = erasure_code(points_for_reconstruction, x_original)    
+reconstructed_string = points_to_string(original_points) 
 
-assert reconstructed_file == string_input
+assert reconstructed_string == string_input
 print("Tah dahhh")

@@ -1,11 +1,11 @@
 import math
+import random
 import secrets
 import sympy as sym
 x = sym.Symbol('x')
 
 # Turn these variables into user generated, CLI inputs 
 probability_node_is_down = 0.1
-
 
 # ===============
 # Basic Functions
@@ -36,18 +36,6 @@ def operate_on_list(list, operation):
 # ===========
 # Input Logic 
 # ===========
-# def convert_string_input():
-#   string_input = input('Enter a string of numbers to encode: ')
-#   factor_of_extension = int(input('Enter factor (integer) to extend data by: '))
-
-#   file_chunks = [int(c) for c in string_input]
-#   x_original = [x for x in range(1, len(file_chunks)+1)]       
-#   m = x_original[-1]
-#   n = m*factor_of_extension
-#   x_extension = [x for x in range(m+1, n+1)] 
-#   beginning_points = list(zip(x_original, file_chunks))
-#   return beginning_points, string_input, x_original, x_extension
-
 def convert_string_input():
   string_input = input('Enter string to encode: ')
   factor_of_extension = int(input('Enter factor (integer) to extend data by: '))
@@ -59,7 +47,6 @@ def convert_string_input():
   x_extension = [x for x in range(m+1, n+1)] 
   beginning_points = list(zip(x_original, file_chunks))
   
-  print('file chunks: '+str(file_chunks))
   return beginning_points, string_input, x_original, x_extension
 
 def convert_node_input(all_points):
@@ -128,6 +115,7 @@ class Node:
   def __init__(self, index):
     self.index = index 
     self.file_chunks = []
+    self.status = True
 
   def add_chunk(self, chunk):
     self.file_chunks.append(chunk)
@@ -141,8 +129,6 @@ def create_nodes(number_of_nodes) -> list[Node]:
     nodes.append(Node(i))  
   return nodes 
 
-# Distribute file chunks explicitely to insure there isn't too much redundancy
-# Make sure calculations are tied back to user input 
 def distribute_file_chunks(nodes, all_points, chunks_per_node) -> list[Node]:                    
   chunk_increment = 0
   for c in range(chunks_per_node):           
@@ -152,50 +138,22 @@ def distribute_file_chunks(nodes, all_points, chunks_per_node) -> list[Node]:
       chunk_increment += 1
   return nodes
 
+def apply_probability(nodes, probability):
+  for node in nodes: 
+    rand = random.uniform(0,1)
+    if rand <= probability:
+      node.status = False 
+
 # ====================
 # Reconstruction Logic 
 # ====================
-# def reconstruct_file(full_nodes, x_coordinates_for_original_file):
-#   points_for_reconstruction = [] 
-  
-#   while len(points_for_reconstruction) < len(x_coordinates_for_original_file): 
-#     node_in_question = secrets.choice(full_nodes)
-#     if len(node_in_question.file_chunks) > 0:
-#       random_chunk_index = secrets.randbelow(len(node_in_question.file_chunks))
-#       chunk = node_in_question.file_chunks[random_chunk_index]
-#       if redundancy_algorithm(chunk, points_for_reconstruction) == False:
-#         points_for_reconstruction.append(chunk)                  #  <---- Organize encoded_file_chunks in a more efficient way
-#         node_in_question.pop_chunk(random_chunk_index)        #  <---- This feels awkward
-
-#   print("Encoded file chunks: "+str(points_for_reconstruction))
-#   original_points = erasure_code(points_for_reconstruction, x_coordinates_for_original_file)    
-#   original_file = points_to_string(original_points) 
-  
-#   return original_file 
-
-# #  First organize placing chunks in list smallest x ---> largest x, then worry about creating a better function
-# #  Wait- is this more efficient than what i'd otherwise want to do?
-# def redundancy_algorithm(chunk_in_question, encoded_file_chunks) -> bool:
-#   if len(encoded_file_chunks) > 0: 
-#     for i in range(len(encoded_file_chunks)):
-#       if chunk_in_question == encoded_file_chunks[i]:  
-#         return True
-#   return False   
-
-# def points_to_string(points):
-#   file_list = [] 
-#   for point in points:
-#     file_list.append(str(point[1])) 
-#   file = ''.join(file_list)
-#   return file
-
-
-def reconstruct_file(full_nodes, x_coordinates_for_original_file):
+def gather_chunks(full_nodes, x_coordinates_for_original_file):
+  apply_probability(full_nodes, probability_node_is_down)
   points_for_reconstruction = [] 
   
   while len(points_for_reconstruction) < len(x_coordinates_for_original_file): 
     node_in_question = secrets.choice(full_nodes)
-    if len(node_in_question.file_chunks) > 0:
+    if len(node_in_question.file_chunks) > 0 and node_in_question.status == True:
       random_chunk_index = secrets.randbelow(len(node_in_question.file_chunks))
       chunk = node_in_question.file_chunks[random_chunk_index]
       if redundancy_algorithm(chunk, points_for_reconstruction) == False:
@@ -203,13 +161,11 @@ def reconstruct_file(full_nodes, x_coordinates_for_original_file):
         node_in_question.pop_chunk(random_chunk_index)        #  <---- This feels awkward
 
   print("Encoded file chunks: "+str(points_for_reconstruction))
-  original_points = erasure_code(points_for_reconstruction, x_coordinates_for_original_file)    
-  original_file = points_to_string(original_points) 
-
-  return original_file 
+  return points_for_reconstruction
 
 #  First organize placing chunks in list smallest x ---> largest x, then worry about creating a better function
-#  I believe this linear search is better (than organizing list and then inserting) up to a certain point.  What's that point?
+#  I believe this linear search is better (than organizing list and then inserting) up to a certain point.  
+#  What is that point???
 def redundancy_algorithm(chunk_in_question, encoded_file_chunks) -> bool:
   if len(encoded_file_chunks) > 0: 
     for i in range(len(encoded_file_chunks)):
