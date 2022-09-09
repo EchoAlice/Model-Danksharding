@@ -12,7 +12,7 @@ Based off of Vitalik's blog post: \
 https://blog.ethereum.org/2014/08/16/secret-sharing-erasure-coding-guide-aspiring-dropbox-decentralizer/
 
 Erasure/Reed Solomon coding is a technique that separates data of m chunks and encodes these into n chunks, such that any m of n chunks can be used 
-to recreate the original data.  This concept is employed by Ethereum to make data availability sampling of blobs feasible for sharding.  Erasure
+to recreate the original data.  This concept is employed by Ethereum to make data avaiable for rollups, and in the future, sharding.  Erasure
 coding makes it impossible for an individual to withhold even a single bit of information without anyone requesting this information to be able to
 detect foul play.
 My project implements this technique. 
