@@ -34,7 +34,7 @@ of nodes to recreate the polynomial.  By knowing the x coordinates for the point
 polynomial at these x coordinates to recover the original file!
 
 **TO DO:**
-- Create conditional statements for user input
+- Mimic data sharding (encode blobs, mock p2p subnets, etc.) 
 - Incorporate encryption of data before sending it to nodes
 - Optimize the heck out of this
 - Allow small files to be encoded

@@ -1,10 +1,11 @@
 import math
+import numbers
 import random
 import secrets
 import sympy as sym
 x = sym.Symbol('x')
 
-# Turn these variables into user generated, CLI inputs 
+# Turn this variable into user generated, CLI inputs 
 probability_node_is_down = 0.1
 
 # ===============
@@ -36,11 +37,15 @@ def operate_on_list(list, operation):
 # ===========
 # Input Logic 
 # ===========
+#
+#    Mock a blob
 def convert_string_input():
-  string_input = input('Enter string to encode: ')
-  factor_of_extension = int(input('Enter factor (integer) to extend data by: '))
+  # string_input = input('Enter string to encode: ')
+  string_input = 'ffffffffffffffffffffffffffffffff'                   # Test input for now 
+  # string_input = 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'                    
 
-  file_chunks = [c for c in string_input.encode('ascii')]
+  factor_of_extension = 2 
+  file_chunks = [c for c in string_input.encode('ascii')]             #  At some point, have file chunks equivalent to 512 bytes each (mock shards) 
   x_original = [x for x in range(1, len(file_chunks)+1)]       
   m = x_original[-1]
   n = m*factor_of_extension
@@ -49,11 +54,18 @@ def convert_string_input():
   
   return beginning_points, string_input, x_original, x_extension
 
+#     Mock a subnet
 def convert_node_input(all_points):
-  number_of_nodes = int(input('Number of Nodes: '))
-  chunks_per_node = int(input('Chunks per node: '))
-  # probability_node_down = input('Probability node is down: ')  #  <---- Encorperate this one later
-  
+  # Muted inputs for testing 
+  # 
+  # number_of_nodes = int(input('Number of Nodes: '))
+  # chunks_per_node = int(input('Chunks per node: '))
+
+  # Test values
+  #  
+  number_of_nodes = 1
+  chunks_per_node = 1
+
   min_number_of_nodes = math.ceil(len(all_points)/chunks_per_node)    
   if number_of_nodes >= min_number_of_nodes:
     return create_nodes(number_of_nodes), chunks_per_node
@@ -136,6 +148,7 @@ def distribute_file_chunks(nodes, all_points, chunks_per_node) -> list[Node]:
       i = chunk_increment % len(all_points) 
       nodes[n].add_chunk(all_points[i]) 
       chunk_increment += 1
+  
   return nodes
 
 def apply_probability(nodes, probability):
