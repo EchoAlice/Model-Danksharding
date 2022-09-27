@@ -39,11 +39,7 @@ def operate_on_list(list, operation):
 # ===========
 #
 #    Mock a blob
-def convert_string_input():
-  # string_input = input('Enter string to encode: ')
-  string_input = 'ffffffffffffffffffffffffffffffff'                   # Test input for now 
-  # string_input = 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'                    
-
+def convert_string_input(string_input):
   factor_of_extension = 2 
   file_chunks = [c for c in string_input.encode('ascii')]             #  At some point, have file chunks equivalent to 512 bytes each (mock shards) 
   x_original = [x for x in range(1, len(file_chunks)+1)]       
@@ -52,17 +48,10 @@ def convert_string_input():
   x_extension = [x for x in range(m+1, n+1)] 
   beginning_points = list(zip(x_original, file_chunks))
   
-  return beginning_points, string_input, x_original, x_extension
+  return beginning_points, x_original, x_extension
 
 #     Mock a subnet
 def convert_node_input(all_points):
-  # Muted inputs for testing 
-  # 
-  # number_of_nodes = int(input('Number of Nodes: '))
-  # chunks_per_node = int(input('Chunks per node: '))
-
-  # Test values
-  #  
   number_of_nodes = 1
   chunks_per_node = 1
 
@@ -76,18 +65,56 @@ def convert_node_input(all_points):
 # =============
 # Erasure Logic
 # =============
-def erasure_code(original_points, x_coordinates_for_new_points) -> list:   
+def erasure_code(original_points, x_extension) -> list:   
   polynomial = lagrange_interpolation(original_points)    
   
   # Make sure there are enough x_coordinates_extend to recover original file. 
-  assert len(x_coordinates_for_new_points) >= len(original_points)
+  assert len(x_extension) >= len(original_points)
   
-  new_points = extrapolate_points(polynomial, x_coordinates_for_new_points)
+  new_points = extrapolate_points(polynomial, x_extension)
   return new_points
 
 # ==============
 # Lagrange Logic
 # ==============
+
+def lagrange_interp(pieces, xs):
+    arithmetic = pieces[0].__class__
+    zero, one = arithmetic(0), arithmetic(1)
+    # Generate master numerator polynomial
+    root = [one]
+    for i in range(len(xs)):
+        root.insert(0, zero)
+        for j in range(len(root)-1):
+            root[j] = root[j] - root[j+1] * xs[i]
+    # Generate per-value numerator polynomials by dividing the master
+    # polynomial back by each x coordinate
+    nums = []
+    for i in range(len(xs)):
+        output = []
+        last = one
+        for j in range(2, len(root)+1):
+            output.insert(0, last)
+            if j != len(root):
+                last = root[-j] + last * xs[i]
+        nums.append(output)
+    # Generate denominators by evaluating numerator polys at their x
+    denoms = []
+    for i in range(len(xs)):
+        denom = zero
+        x_to_the_j = one
+        for j in range(len(nums[i])):
+            denom += x_to_the_j * nums[i][j]
+            x_to_the_j *= xs[i]
+        denoms.append(denom)
+    # Generate output polynomial
+    b = [zero for i in range(len(pieces))]
+    for i in range(len(xs)):
+        yslice = pieces[int(i)] / denoms[int(i)]
+        for j in range(len(pieces)):
+            b[j] += nums[i][j] * yslice
+    return b
+
 # Creates set of polynomials that represent each file chunk, then adds all polynomials together,
 # making a polynomial that uniquely represents the points given
 def lagrange_interpolation(points):
@@ -95,8 +122,10 @@ def lagrange_interpolation(points):
   final_form_polynomials = [] 
   for i in range(len(points)):
     polynomials.append(one_and_zeros_polynomial(points[i][0], points))  
+    print('polynomial: '+str(polynomials[i])) 
     final_form_polynomials.append(points[i][1]*expand_expression(polynomials[i][0])/operate_on_list(polynomials[i][1], multiply))
   final_polynomial = operate_on_list(final_form_polynomials, add)
+  print('final polynomial: '+str(final_polynomial)) 
   return final_polynomial 
 
 # Creates a polynomial whose value is 1 at the x in question and 0 at all other x's
@@ -117,6 +146,7 @@ def extrapolate_points(polynomial, x_coordinates):
   extended_file_chunks = [] 
   for x_coordinate in x_coordinates: 
     y = polynomial.subs({x:x_coordinate})
+    # extended_file_chunks.append(y)
     extended_file_chunks.append((x_coordinate,y))
   return extended_file_chunks
 
@@ -173,7 +203,7 @@ def gather_chunks(full_nodes, x_coordinates_for_original_file):
         points_for_reconstruction.append(chunk)                  #  <---- Organize encoded_file_chunks in a more efficient way
         node_in_question.pop_chunk(random_chunk_index)        #  <---- This feels awkward
 
-  print("Encoded file chunks: "+str(points_for_reconstruction))
+  # print("Encoded file chunks: "+str(points_for_reconstruction))
   return points_for_reconstruction
 
 #  First organize placing chunks in list smallest x ---> largest x, then worry about creating a better function
