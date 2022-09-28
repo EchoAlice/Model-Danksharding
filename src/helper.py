@@ -59,19 +59,19 @@ def convert_node_input(all_points):
   if number_of_nodes >= min_number_of_nodes:
     return create_nodes(number_of_nodes), chunks_per_node
   else:
-    print('Not enough storage available to reconstruct data...  Creating minimum number of nodes given chunks per node.') 
+    # print('Not enough storage available to reconstruct data...  Creating minimum number of nodes given chunks per node.') 
     return create_nodes(min_number_of_nodes), chunks_per_node 
 
 # =============
 # Erasure Logic
 # =============
-def erasure_code(original_points, x_extension) -> list:   
-  polynomial = lagrange_interpolation(original_points)    
-  
-  # Make sure there are enough x_coordinates_extend to recover original file. 
-  assert len(x_extension) >= len(original_points)
-  
-  new_points = extrapolate_points(polynomial, x_extension)
+
+def reed_solomon(data, xs, extended_xs) -> list:   
+  polynomial = lagrange_interpolation(data, xs)    
+  print('final polynomial: '+str(polynomial))
+  # Make sure extrapolate_points still serves points until I know 
+  #     what i want to do with nodes. 
+  new_points = extrapolate_points(polynomial, extended_xs)             
   return new_points
 
 # ==============
@@ -117,28 +117,27 @@ def lagrange_interp(pieces, xs):
 
 # Creates set of polynomials that represent each file chunk, then adds all polynomials together,
 # making a polynomial that uniquely represents the points given
-def lagrange_interpolation(points):
+def lagrange_interpolation(data, xs):
   polynomials = []
   final_form_polynomials = [] 
-  for i in range(len(points)):
-    polynomials.append(one_and_zeros_polynomial(points[i][0], points))  
-    print('polynomial: '+str(polynomials[i])) 
-    final_form_polynomials.append(points[i][1]*expand_expression(polynomials[i][0])/operate_on_list(polynomials[i][1], multiply))
+  for i in range(len(data)):
+    polynomials.append(one_and_zeros_polynomial(xs[i], xs))  
+    final_form_polynomials.append(data[i]*expand_expression(polynomials[i][0])/operate_on_list(polynomials[i][1], multiply))
   final_polynomial = operate_on_list(final_form_polynomials, add)
-  print('final polynomial: '+str(final_polynomial)) 
+  # Create a polynomial with just the coefficients! 
   return final_polynomial 
 
 # Creates a polynomial whose value is 1 at the x in question and 0 at all other x's
-def one_and_zeros_polynomial(x_in_question, points):
+def one_and_zeros_polynomial(x_in_question, xs):
   basic_polynomial = []
   for i in range(2):
     half_poly = []
-    for point in points:
-      if x_in_question != point[0]:
+    for j in range(len(xs)):
+      if x_in_question != xs[j]:
         if i == 0:
-          half_poly.append((x - point[0]))  
+          half_poly.append((x - xs[j]))  
         if i == 1:
-          half_poly.append((x_in_question - point[0]))
+          half_poly.append((x_in_question - xs[j]))
     basic_polynomial.append(half_poly) 
   return basic_polynomial
 
@@ -222,3 +221,32 @@ def points_to_string(points):
     file_list.append(point[1]) 
   file = bytes(file_list).decode() 
   return file
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# =============
+# RANDOM VALUES
+# =============
+def random_chunks_and_xs(points):
+  points_chosen = [] 
+  number_of_chunks = int(len(points)/2)  
+  for i in range(number_of_chunks):
+    random_point = secrets.choice(points)
+    points_chosen.append(random_point)
+    points.remove(random_point) 
+  return points_chosen
