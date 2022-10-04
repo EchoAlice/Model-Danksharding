@@ -3,9 +3,17 @@ import numbers
 import random
 import secrets
 import sympy as sym
+from remerkleable.basic import uint64, byte
+from remerkleable.complex import Container, Vector
+
+
 x = sym.Symbol('x')
 
-# Turn this variable into user generated, CLI inputs 
+# e = mkModuloClass(11)
+Bytes16 = Vector[byte, 16]                        # Test value for now
+Bytes512 = Vector[byte, 512]
+sample = byte                                     # A sample is actually a 512 byte chunk!
+
 probability_node_is_down = 0.1
 
 # ===============
@@ -47,36 +55,61 @@ def convert_string_input(string_input):
   n = m*factor_of_extension
   x_extension = [x for x in range(m+1, n+1)] 
   beginning_points = list(zip(x_original, file_chunks))
-  
   return beginning_points, x_original, x_extension
 
 #     Mock a subnet
 def convert_node_input(all_points):
   number_of_nodes = 1
   chunks_per_node = 1
-
   min_number_of_nodes = math.ceil(len(all_points)/chunks_per_node)    
   if number_of_nodes >= min_number_of_nodes:
-    return create_nodes(number_of_nodes), chunks_per_node
+    return create_storage_nodes(number_of_nodes), chunks_per_node
   else:
-    # print('Not enough storage available to reconstruct data...  Creating minimum number of nodes given chunks per node.') 
-    return create_nodes(min_number_of_nodes), chunks_per_node 
+    return create_storage_nodes(min_number_of_nodes), chunks_per_node 
 
-# =============
-# Erasure Logic
-# =============
 
-def reed_solomon(data, xs, extended_xs) -> list:   
+# ==========================
+# Lagrange Logic (Vitalik's)
+# ==========================
+#
+# We explicitely define xs and xs_to_derive outside of this function so
+# we can use this function to extend data or reconstruct original data.
+def reed_solomon_data(data, xs, xs_to_derive) -> list[sample]:                        
+  # polynomial = lagrange_interp(data, xs)
   polynomial = lagrange_interpolation(data, xs)    
-  print('final polynomial: '+str(polynomial))
-  # Make sure extrapolate_points still serves points until I know 
-  #     what i want to do with nodes. 
-  new_points = extrapolate_points(polynomial, extended_xs)             
-  return new_points
+  derived_chunks = extrapolate_chunks_my_version(polynomial, xs_to_derive)
+  return derived_chunks
 
-# ==============
-# Lagrange Logic
-# ==============
+# Modular division class
+def mkModuloClass(n):
+  if pow(2, n, n) != 2:
+    raise Exception("n must be prime!")
+
+  class Mod:
+    val = 0
+
+    def __init__(self, val):
+      self.val = val.val if isinstance(
+        self.val, self.__class__) else val
+
+    def __add__(self, other):
+      return self.__class__((self.val + other.val) % n)
+
+    def __mul__(self, other):
+      return self.__class__((self.val * other.val) % n)
+
+    def __sub__(self, other):
+      return self.__class__((self.val - other.val) % n)
+
+    def __truediv__(self, other): 
+      return self.__class__((self.val * other.val ** (n-2)) % n)
+
+    def __int__(self):
+      return self.val
+
+    def __repr__(self):
+      return repr(self.val)
+  return Mod
 
 def lagrange_interp(pieces, xs):
     arithmetic = pieces[0].__class__
@@ -115,15 +148,58 @@ def lagrange_interp(pieces, xs):
             b[j] += nums[i][j] * yslice
     return b
 
+# USE THIS VERSION OF EXTRAPOLATE_CHUNKS() WITH LAGRANGE_INTERP()
+#----------------------------------------------------------------
+# def extrapolate_chunks(polynomial, xs):                             
+#   extended_chunks=[]   
+#   for x in xs:
+#     sample = round(solve_x(x,polynomial)) 
+#     # sample = solve_x(x,polynomial) 
+#     extended_chunks.append(sample) 
+#   return extended_chunks
+
+def extrapolate_chunks_my_version(polynomial, xs):                             
+  extended_file_chunks = [] 
+  for x_coordinate in xs: 
+    y = polynomial.subs({x:x_coordinate})
+    extended_file_chunks.append(y)
+  return extended_file_chunks
+
+def solve_x(x, polynomial):
+  # Sets up the type of math you're using (int or Mod) 
+  arithmetic = x.__class__ 
+  zero, one = arithmetic(0), arithmetic(1) 
+  
+  y = zero
+  power_val = x
+  for i in range(len(polynomial)):
+    if i == 0:
+      power_val = one 
+    y += polynomial[i]*power_val 
+    power_val *= x  
+  return y
+
+# =====================
+# Lagrange Logic (Mine)
+# =====================
+
+def reed_solomon_points(data, xs, extended_xs) -> list:   
+  polynomial = lagrange_interpolation(data, xs)    
+  new_points = extrapolate_points(polynomial, extended_xs)             
+  return new_points
+
 # Creates set of polynomials that represent each file chunk, then adds all polynomials together,
 # making a polynomial that uniquely represents the points given
 def lagrange_interpolation(data, xs):
+
   polynomials = []
-  final_form_polynomials = [] 
+  final_polynomial = [] 
   for i in range(len(data)):
     polynomials.append(one_and_zeros_polynomial(xs[i], xs))  
-    final_form_polynomials.append(data[i]*expand_expression(polynomials[i][0])/operate_on_list(polynomials[i][1], multiply))
-  final_polynomial = operate_on_list(final_form_polynomials, add)
+    final_polynomial.append(data[i]*expand_expression(polynomials[i][0])/operate_on_list(polynomials[i][1], multiply))
+
+  final_polynomial = operate_on_list(final_polynomial, add)
+  
   # Create a polynomial with just the coefficients! 
   return final_polynomial 
 
@@ -149,10 +225,13 @@ def extrapolate_points(polynomial, x_coordinates):
     extended_file_chunks.append((x_coordinate,y))
   return extended_file_chunks
 
-# ==========
-# Node Logic 
-# ==========
-class Node:
+
+
+# ===================
+# STORAGE NODES (old)              
+# ===================                Maybe recycle these to each store blob data
+
+class StorageNode:
   def __init__(self, index):
     self.index = index 
     self.file_chunks = []
@@ -164,27 +243,27 @@ class Node:
   def pop_chunk(self, chunk_index):
     self.file_chunks.pop(chunk_index)
 
-def create_nodes(number_of_nodes) -> list[Node]:
-  nodes = [] 
+def create_storage_nodes(number_of_nodes) -> list[StorageNode]:
+  storage_nodes = [] 
   for i in range(number_of_nodes):
-    nodes.append(Node(i))  
-  return nodes 
+    storage_nodes.append(StorageNode(i))  
+  return storage_nodes 
 
-def distribute_file_chunks(nodes, all_points, chunks_per_node) -> list[Node]:                    
+def distribute_file_chunks(storage_nodes, all_points, chunks_per_node) -> list[StorageNode]:                    
   chunk_increment = 0
   for c in range(chunks_per_node):           
-    for n in range(len(nodes)):
+    for n in range(len(storage_nodes)):
       i = chunk_increment % len(all_points) 
-      nodes[n].add_chunk(all_points[i]) 
+      storage_nodes[n].add_chunk(all_points[i]) 
       chunk_increment += 1
-  
-  return nodes
+  return storage_nodes
 
 def apply_probability(nodes, probability):
   for node in nodes: 
     rand = random.uniform(0,1)
     if rand <= probability:
       node.status = False 
+
 
 # ====================
 # Reconstruction Logic 
@@ -202,7 +281,6 @@ def gather_chunks(full_nodes, x_coordinates_for_original_file):
         points_for_reconstruction.append(chunk)                  #  <---- Organize encoded_file_chunks in a more efficient way
         node_in_question.pop_chunk(random_chunk_index)        #  <---- This feels awkward
 
-  # print("Encoded file chunks: "+str(points_for_reconstruction))
   return points_for_reconstruction
 
 #  First organize placing chunks in list smallest x ---> largest x, then worry about creating a better function
