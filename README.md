@@ -44,7 +44,7 @@ polynomial at these x coordinates to recover the original file!
 
 **DOING:**
 I'm currently moving from modeling the reconstruction of a string via storage nodes, to modeling what's going on with Protodanksharding (EIP 4844).
-Specifically, I'm mocking a vertical subnet (A p2p subnetwork that is focused on validators asking each other about the status on availability
+Specifically, I'm mocking a horizontal subnet (A p2p subnetwork that is focused on validators asking each other about the status on availability
 of a specific blob's indices/chunks).   
 
 
