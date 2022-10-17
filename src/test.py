@@ -18,12 +18,15 @@ chunk = list
 # python -m pytest .\src\test.py 
 # To see print statements...  python -m pytest -s .\src\test.py 
 
+# =====
+# Speed
+# =====
 
-
-
-
-
-
+# start_time = time.time()
+# main() 
+# print('Run time: ')
+# print("--- %s seconds ---" % (time.time() - start_time))
+# print('\n')
 
 
 

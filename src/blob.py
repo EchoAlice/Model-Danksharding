@@ -4,6 +4,17 @@ from helper import ( random_chunks_and_xs,
 from remerkleable.basic import uint64, byte
 from remerkleable.complex import Container, Vector
 
+"""
+  This file is trash right now...
+  
+  I need to instantiate a lagrange function that works much better
+  in order to create a real blob.  And this seperate file for the
+  blob isn't necessary.  Just encorperate lagrange logic in main.py
+"""
+
+
+
+
 #   Custom types 
 Bytes16 = Vector[byte, 16]                        # Test value for now
 Bytes512 = Vector[byte, 512]
