@@ -9,8 +9,7 @@ from config import ( k,
 # =========
 #
 # This will keep track of positions within the tree.
-#
-# TREE NODES ALWAYS START OUT AS A BUCKET CARRYING NODE
+# Tree nodes always start out with a bucket
 class TreeNode:
   def __init__(self, prefix):
     self.prefix = prefix 
@@ -18,11 +17,14 @@ class TreeNode:
     self.right = None
     self.bucket = Bucket(prefix) 
 
-  # If a tree node doesn't have any children, THEN a bucket must exist at that tree node's position
-  def add_bucket(self):
-    if self.left== None and self.right == None: 
-      self.bucket = Bucket(self.prefix_bit)
-    return 
+  # This function would be used when restructuring an already populated table.
+  # Creates a lot of complexity... Hold off for now
+  #  
+  # def add_bucket(self):
+
+  def delete_bucket(self):
+    self.bucket = None 
+    return
 
 
 # ======
@@ -30,13 +32,12 @@ class TreeNode:
 # ======
 #
 # The common prefix is its position in the tree.
+# Later: Add linked list functionality for a bucket
 class Bucket:
   bucket_length = k
 
-  # if the prefix changes, the bucket's range is NOT automatically changed  
   def __init__(self, prefix):  
     self.prefix = prefix
-    self.bucket_range = self.bucket_range(prefix)        # Figure this one out! Might not need this attribute 
     self.peer_ids = [-1]*k
 
   # This function works 
@@ -54,19 +55,13 @@ class Bucket:
     self.peer_ids[first_empty_index] = peer  
     return
 
-
-  def delete_peer(self):
-    return 
-
-
-  def bucket_range(self, prefix) -> list:
-    bucket_range = [] 
-    
-    if prefix == None:
-      bucket_range = [0, MAX_KEY] 
-      return bucket_range
-    # How do i calculate the bucket's range?
-
+  def delete_peer(self, peer):
+    for i in range(self.bucket_length): 
+      if self.peer_ids[i] == peer: 
+        self.peer_ids[i] = -1
+        return 
+    print('Peer is not here') 
+    return
 
 
 
@@ -75,36 +70,40 @@ class Bucket:
 # =============
 #
 class RoutingTable:
-  root = TreeNode(None)      # Maybe place TreeNode(None) in self.table, and change self.table to self.root
-
-  def __init__(self, bin_id): 
-    self.bin_id = bin_id 
-    self.table = self.root                  
+  def __init__(self, source_id): 
+    self.source_id = source_id 
+    self.root = TreeNode(None)                  
     self.depth = 0     # <---- Same as the number of prefix bits that match source node.  When i add a bucket, add to the max depth 
 
   def add_peer(self, peer) -> None:
-    source = self.bin_id 
-    root = self.table  
-    path = self.find_path(peer)                
-    tree_node = self.traverse(root, path)
+    # should find_path() be placed inside of traverse()? Do i ever use one without the other? 
+    path = self.find_path(peer)  
+    print('Path for node to be added: '+str(path))
+    tree_node = self.traverse(self.root, path)
     add_peer_result = tree_node.bucket.add_peer(peer)
 
     # If full, check to see if it's at the closest bucket 
     if add_peer_result == 'Full':
-      if path == None or tree_node.prefix[:self.depth] == source[:self.depth]:         
+      if path == None or tree_node.prefix[:self.depth] == self.source_id[:self.depth]:         
         peers = copy.deepcopy(tree_node.bucket.peer_ids) 
         peers.append(peer)
         self.split_closest_k_bucket(path, tree_node, peers)            
 
-    self.bredth_first_search(root)
+    self.bredth_first_search(self.root)
     return
 
+  # Only focus on removing peer for now.  Don't worry about deleting a bucket completely
+  def delete_peer(self, peer):
+    path = self.find_path(peer)
+    tree_node = self.traverse(self.root, path)
+    tree_node.bucket.delete_peer(peer) 
+    return
 
   # If the k-bucket's range includes u's own node ID, then the bucket is split into two new 
   # buckets, the old contents divided between the two, and the insertion attempt repeated  
   def split_closest_k_bucket(self, path, parent_node, peers) -> None:
     bit_matching_index = self.depth 
-    closest_prefix_bit = self.bin_id[bit_matching_index]
+    closest_prefix_bit = self.source_id[bit_matching_index]
      
     # CREATE NEW BUCKETS
     if path == None:
@@ -117,7 +116,8 @@ class RoutingTable:
     # Create new left and right nodes, and remove original bucket
     parent_node.left = TreeNode(left_prefix)
     parent_node.right = TreeNode(right_prefix) 
-    parent_node.bucket = None
+    parent_node.delete_bucket() 
+    # parent_node.bucket = None
 
     # MOVE PEERS TO NEW BUCKETS
     new_closest_bucket, new_sister_bucket = self.new_buckets(closest_prefix_bit, parent_node) 
@@ -167,18 +167,16 @@ class RoutingTable:
 
   # Follow the path from root down to the correct node 
   def traverse(self, root, path) -> TreeNode:
-    tree_node = root 
-
     # At root node. No buckets have split
     if path == None:
-      return tree_node
+      return root
     
     for bit in path:
       if bit == '0':
-        tree_node = tree_node.left 
+        root = root.left 
       if bit == '1':
-        tree_node = tree_node.right 
-    return tree_node
+        root = root.right 
+    return root 
   
   
   # ----------------
@@ -188,32 +186,29 @@ class RoutingTable:
   # Finds correct path to tree node in order to place peer inside of its bucket 
   def find_path(self, peer) -> str:
     prefix = []
-    source = self.bin_id 
-    distance = self.xor_distance(peer, source)
+    distance = self.xor_distance(peer, self.source_id)
     
     # ------------ 
     #  Edge cases  
     # ------------ 
     # At root node.  Change this to... 
-    if self.table.left == None and self.table.right == None: 
+    if self.root.left == None and self.root.right == None: 
       return None
     # No common path.  Return opposite node from first bit 
     if distance[0] == '1': 
-      if self.bin_id[0] == '0':
+      if self.source_id[0] == '0':
         return '1' 
       return '0'
 
     # This loop should only be cycled through as long as it hasn't surpassed the maximum depth 
-    print('depth of tree: '+str(self.depth)) 
     for i in range(self.depth):
       if distance[i] == '0': 
-        prefix.append(source[i])
+        prefix.append(self.source_id[i])
       # Provides an off ramp for peers that should be placed in intermediate buckets.
       else:
         prefix.append(peer[i]) 
         break
     
-    print('Path to peer: '+str(''.join(prefix)))
     return ''.join(prefix)
 
   def xor_distance(self, s1, s2) -> str:
@@ -242,3 +237,8 @@ for i in range(MAX_KEY+1):
     print("i: "+str(i)) 
     print('Peer: '+str(peer_id)) 
     routing_table.add_peer(peer_id)
+
+# Tests delete function
+peer_test = generate_node_binary(6)
+routing_table.add_peer(peer_test)
+routing_table.delete_peer(peer_test)
