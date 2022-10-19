@@ -1,7 +1,10 @@
-from dht import RoutingTable, HashTable
-from config import ( samples,
+from dht import PeerNode, RoutingTable #,HashTable
+from config import ( MAX_BIN_DIGITS, 
+                     MAX_KEY,
+                     samples,
 )
 from p2p_helper import ( generate_node_binary,
+                         generate_random_bitstring, 
                          populate_table,
 )
 
@@ -16,7 +19,7 @@ from p2p_helper import ( generate_node_binary,
     2. Each node is responsible for knowing about the status of a few samples within this blob.
     3. A node is already aware of vertical subnets. We aren't recreating this process 
     4. A node's chunks (vertical subnet aggregation attestations) are correct
-    5. All nodes stay up all the time (nodes don't have to ping)
+    5. All nodes stay up all the time (nodes don't have to ping or replace peers once they're inside of routing table)
     6. No latency sensitive routing for now. (Don't worry about node's distance from each other IRL)
 '''
 
@@ -24,16 +27,25 @@ class Blob:
   def __init__(self, samples): 
     self.samples = samples 
 
-# Node info = {IP address, UDP port, node id}
-#       - IP address
-#       - UDP port
-#       - Node ID 
 
+# Node info = {IP address, UDP port, node id}
+#
+#       - IP address     ()    
+#       - UDP port       (16 bits)
+#       - NodeID         160 bit int
+#
+#       - Key            160 bit int (typically hash of a string key)
+#       - Value          Byte array (fits in udp packet?)
+#       - Nonce          160 bit int.  Not sure what this is for
+
+# Contains all information, and RPCs
 class Node:
-  def __init__(self, bin_id):
-    self.bin_id = bin_id                           
-    self.routing_table = RoutingTable(bin_id)  
-    self.hash_table = HashTable(bin_id)                  
+  def __init__(self, node_id):
+    self.ip_address = None 
+    self.udp_port = None 
+    self.node_id = node_id                           
+    self.routing_table = RoutingTable(node_id)  
+    # self.hash_table = HashTable(node_id)                  
   
   def find_value(self, key: int) :
     # while:   
@@ -54,25 +66,61 @@ class Node:
   def get(key: int):
     pass
 
-  def put():
-    pass
-
   # (key, value)
   def store(self):
     pass
 
 
 
+# ======================================================================
+#  Populate a routing table before populating nodes with routing tables
+# ======================================================================
+
+source_node = generate_node_binary(4)
+routing_table = RoutingTable(source_node)
 
 
-# ===================== 
-#  Instantiate objects
-# ===================== 
-blob = Blob(samples)
-node = Node(generate_node_binary(4))
+peer_to_find = 0
+
+# Populate RT with PeerNode class!
+for i in range(MAX_KEY+1):
+  peer_to_add = PeerNode(generate_random_bitstring(MAX_KEY, MAX_BIN_DIGITS)) 
+  print('\n') 
+  print('===========================================================================') 
+  print('New Peer: '+str(peer_to_add.node_id)) 
+  print('===========================================================================') 
+  routing_table.add_peer(peer_to_add)
+  if i == 3:
+    peer_to_find = peer_to_add
+    print('Peer to find: '+str(peer_to_find.node_id))
 
 
-populate_table(node.routing_table)
-# Check out the node's routing table!
-print(node.routing_table.bin_id)
-print(node.routing_table.table)
+
+
+# Find Peer within table
+print('Peer to find: '+str(peer_to_find.node_id))
+
+node_id = peer_to_find.node_id
+peer_node = routing_table.search(node_id)
+if peer_node != None:
+  print('Peer found: '+str(peer_node.node_id))
+else:
+  print()
+
+
+
+
+
+
+
+# # ===================== 
+# #  Instantiate objects
+# # ===================== 
+# blob = Blob(samples)
+# node = Node(generate_node_binary(4))
+
+
+# populate_table(node.routing_table)
+# # Check out the node's routing table!
+# print(node.routing_table.bin_id)
+# print(node.routing_table.table)

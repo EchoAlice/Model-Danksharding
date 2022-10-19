@@ -1,27 +1,35 @@
 import copy
 from p2p_helper import ( generate_node_binary, 
+                         generate_random_bitstring,
 )
 from config import ( k, 
+                     MAX_BIN_DIGITS,
                      MAX_KEY,
 )
 
 #                   \\\\\\\\\\\\\\\///////////////
 #                    ============================
-#                        Create Routing table
+#                        Create Routing Table
 #                    ============================
 #                   ///////////////\\\\\\\\\\\\\\\
 #
 #    To Do:
-#    - Create node data type.  What info ABOUT a node needs to be stored? 
+#    - Create HashTable 
 #    - Encorperate node ids with keyspace 2**160
 
 
-# =========
-# TREE NODE
-# =========
+# ==============
+# Helper Classes 
+# ==============
 #
-# This will keep track of positions within the tree.
-# Tree nodes always start out with a bucket
+# Contains a subset of Node info that a node's routing table must store
+class PeerNode:
+  def __init__(self, node_id):  
+    self.node_id = node_id               
+    self.ip_address = None 
+    self.udp_port = None 
+
+# Keeps track of positions within the tree.
 class TreeNode:
   def __init__(self, prefix):
     self.prefix = prefix 
@@ -33,47 +41,48 @@ class TreeNode:
     self.bucket = None 
     return
 
-  # This function would be used when restructuring an already populated table.
-  # Creates a lot of complexity... Hold off for now
-  #  
-  # def add_bucket(self):
-
-
-# ======
-# Bucket 
-# ======
+# The common prefix is its position in the tree.  Later: Add linked list functionality 
 #
-# The common prefix is its position in the tree.
-# Later: Add linked list functionality for a bucket
 class Bucket:
-  bucket_length = k
-
   def __init__(self, prefix):  
     self.prefix = prefix
-    self.peer_ids = [-1]*k
+    self.peers = [-1]*k
 
-  # This function works 
   def add_peer(self, peer):
     first_empty_index = None 
-
-    for i in range(len(self.peer_ids)):
-      if self.peer_ids[i] == peer:
-        print('Peer is already inside of bucket')  
-        return
-      if self.peer_ids[i] == -1 and first_empty_index == None:
-        first_empty_index = i
+    
+    for i in range(len(self.peers)):
+      # Finding first place to put peer 
+      if self.peers[i] == -1: 
+        if first_empty_index == None:
+          first_empty_index = i
+      # Making sure the peer isn't already inside of the bucket 
+      else:
+        if self.peers[i].node_id == peer.node_id:
+          return
+    
     if first_empty_index == None:
       return 'Full'
-    self.peer_ids[first_empty_index] = peer  
+    self.peers[first_empty_index] = peer  
     return
 
   def delete_peer(self, peer):
-    for i in range(self.bucket_length): 
-      if self.peer_ids[i] == peer: 
-        self.peer_ids[i] = -1
-        return 
+    for i in range(len(self.peers)): 
+      if self.peers[i] != -1: 
+        if self.peers[i].node_id == peer.node_id: 
+          self.peers[i] = -1
+          return 
     print('Peer is not here') 
     return
+
+  def search_bucket(self, peer) -> PeerNode:
+    for i in range(len(self.peers)):
+      if self.peers[i] == -1:
+        pass
+      else:
+        if self.peers[i].node_id == peer:
+          return self.peers[i] 
+    return None
 
 
 # =============
@@ -84,19 +93,18 @@ class RoutingTable:
   def __init__(self, source_id): 
     self.source_id = source_id 
     self.root = TreeNode(None)                  
-    self.depth = 0     # <---- Same as the number of prefix bits that match source node.  When i add a bucket, add to the max depth 
+    self.depth = 0       # Prefix bits <= depth 
 
-  def add_peer(self, peer) -> None:
-    # should find_path() be placed inside of traverse()? Do i ever use one without the other? 
-    path = self.find_path(peer)  
-    print('Path for node to be added: '+str(path))
+  def add_peer(self, peer: PeerNode) -> None:
+    path = self.find_path(peer.node_id)                                     
     tree_node = self.traverse(self.root, path)
     add_peer_result = tree_node.bucket.add_peer(peer)
-
+    
     # If full, check to see if it's at the closest bucket 
     if add_peer_result == 'Full':
+      # if tree_node.left == None and tree_node.right == None or ____________________: 
       if path == None or tree_node.prefix[:self.depth] == self.source_id[:self.depth]:         
-        peers = copy.deepcopy(tree_node.bucket.peer_ids) 
+        peers = copy.deepcopy(tree_node.bucket.peers) 
         peers.append(peer)
         self.split_closest_k_bucket(path, tree_node, peers)            
 
@@ -117,10 +125,12 @@ class RoutingTable:
     closest_prefix_bit = self.source_id[bit_matching_index]
      
     # CREATE NEW BUCKETS
+    # if parent_node.left == None and parent_node.right == None: 
     if path == None:
       left_prefix = '0'
       right_prefix = '1' 
     else:
+      # Parent_node.prefix 
       left_prefix = path + '0'
       right_prefix = path + '1' 
 
@@ -133,9 +143,9 @@ class RoutingTable:
     new_closest_bucket, new_sister_bucket = self.new_buckets(closest_prefix_bit, parent_node) 
     
     # Keep track of peers that have been added to new buckets. 
-    # If closest K bucket is STILL full, just returns without placing the last peer 
+    # If closest_k_bucket is STILL full, just returns without placing the last peer 
     for peer in peers:
-      if peer[bit_matching_index] == closest_prefix_bit:
+      if peer.node_id[bit_matching_index] == closest_prefix_bit:
         new_closest_bucket.add_peer(peer)   
       else:  
         new_sister_bucket.add_peer(peer) 
@@ -143,8 +153,7 @@ class RoutingTable:
     self.depth += 1 
     return
 
-
-  # Allows us to visualize the routing table
+  # Visualizing the Routing Table 
   def bredth_first_search(self, root) -> None:
     queue = []
     queue.append(root)
@@ -158,10 +167,19 @@ class RoutingTable:
     while queue:
       queue_buckets = []
       children = [] 
-      # For each item in level, add children (if present) to children array
+
+      # Prints bucket(s) node_ids for each layer of the tree 
       for i in range(len(queue)):
         if queue[i].bucket != None:
-          queue_buckets.append((queue[i].prefix, queue[i].bucket.peer_ids)) 
+          ids = [] 
+          bucket = queue[i].bucket 
+          for j in range(len(bucket.peers)):
+            if bucket.peers[j] != -1:  
+              ids.append(bucket.peers[j].node_id) 
+            else:
+              ids.append(-1) 
+          queue_buckets.append((queue[i].prefix, ids)) 
+          # queue_buckets.append((queue[i].prefix, queue[i].bucket.peers)) 
         if queue[i].left != None: 
           children.append(queue[i].left) 
         if queue[i].right != None:
@@ -175,11 +193,26 @@ class RoutingTable:
     return
 
 
+  def search(self, peer_id: int) -> PeerNode:
+    path = self.find_path(peer_id)
+    tree_node = self.traverse(self.root, path) 
+    peer_node = tree_node.bucket.search_bucket(peer_id) 
+    print('Peer Node: '+str(peer_node)) 
+    if peer_node != None:
+      return peer_node    
+    return  
+
+
+
+
+
   # Follow the path from root down to the correct node 
   def traverse(self, root, path) -> TreeNode:
     # At root node. No buckets have split
     if path == None:
       return root
+    
+    print('Path for node to be added: '+str(path))
     
     for bit in path:
       if bit == '0':
@@ -194,17 +227,13 @@ class RoutingTable:
   # ----------------
 
   # Finds correct path to tree node in order to place peer inside of its bucket 
+  # Should find_path() be placed inside of traverse()? Do i ever use one without the other? 
   def find_path(self, peer) -> str:
     prefix = []
     distance = self.xor_distance(peer, self.source_id)
     
-    # ------------ 
-    #  Edge cases  
-    # ------------ 
-    # At root node.  Change this to... 
     if self.root.left == None and self.root.right == None: 
       return None
-    # No common path.  Return opposite node from first bit 
     if distance[0] == '1': 
       if self.source_id[0] == '0':
         return '1' 
@@ -232,22 +261,9 @@ class RoutingTable:
 
 
 
-# ========================
-#  Populate Routing Table
-# ========================
-source_node = generate_node_binary(4)
-routing_table = RoutingTable(source_node)
 
-for i in range(MAX_KEY+1):
-  peer_id = generate_node_binary(i)
-  if peer_id != source_node:  
-    print('\n')
-    print('\n') 
-    print("i: "+str(i)) 
-    print('Peer: '+str(peer_id)) 
-    routing_table.add_peer(peer_id)
-
-# Tests delete function
-peer_test = generate_node_binary(6)
-routing_table.add_peer(peer_test)
-routing_table.delete_peer(peer_test)
+#                   \\\\\\\\\\\\\\\///////////////
+#                    ============================
+#                         Create Hash Table
+#                    ============================
+#                   ///////////////\\\\\\\\\\\\\\\
