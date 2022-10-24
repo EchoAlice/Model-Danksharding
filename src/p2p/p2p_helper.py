@@ -1,12 +1,17 @@
-from config import ( BIN_DIGITS, 
+from random import randint
+from config import ( MAX_BIN_DIGITS, 
                      MAX_KEY,
 )
 
-
-# Generate node ids (should be random numbers (0, 2**160 - 1)) to add to routing_table
-def generate_node_binary(x):
-  node_binary = format(x, '0'+BIN_DIGITS+'b') 
+# Which 'generate' function is better?
+def generate_node_binary(x) -> str:
+  node_binary = format(x, '0'+MAX_BIN_DIGITS+'b') 
   return node_binary 
+
+# Move constants into the function. Constants shouldn't change
+def generate_random_bitstring(max_int, digits) -> str:
+  bitstring = format(randint(0, max_int), '0'+digits+'b')
+  return bitstring
 
 def populate_table(routing_table_obj) -> None:
   for i in range(MAX_KEY+1):

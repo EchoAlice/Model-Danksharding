@@ -1,7 +1,7 @@
 from dht import PeerNode, RoutingTable #,HashTable
+from blob import samples
 from config import ( MAX_BIN_DIGITS, 
                      MAX_KEY,
-                     samples,
 )
 from p2p_helper import ( generate_node_binary,
                          generate_random_bitstring, 
@@ -23,10 +23,6 @@ from p2p_helper import ( generate_node_binary,
     6. No latency sensitive routing for now. (Don't worry about node's distance from each other IRL)
 '''
 
-class Blob:
-  def __init__(self, samples): 
-    self.samples = samples 
-
 
 # Node info = {IP address, UDP port, node id}
 #
@@ -41,12 +37,13 @@ class Blob:
 # Contains all information, and RPCs
 class Node:
   def __init__(self, node_id):
+    self.node_id = node_id                           
     self.ip_address = None 
     self.udp_port = None 
-    self.node_id = node_id                           
     self.routing_table = RoutingTable(node_id)  
     # self.hash_table = HashTable(node_id)                  
-  
+    # self.closest_nodes_info =  This could be useful for fast lookup times when a peer node wants info from you!
+
   def find_value(self, key: int) :
     # while:   
     #   if key is within the node's keyspace   ~this_node < key < next node~    search its hash table:
@@ -71,56 +68,65 @@ class Node:
     pass
 
 
-
-# ======================================================================
-#  Populate a routing table before populating nodes with routing tables
-# ======================================================================
-
-source_node = generate_node_binary(4)
-routing_table = RoutingTable(source_node)
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-peer_to_find = 0
 
+# =====================================
+# Populate node(s) with Routing Tables!
+# =====================================
+
+# source_node_id = 
+source_node = Node(generate_node_binary(4))
+# routing_table = RoutingTable(source_node.node_id)
+
+
+
+
+
+
+
+# ================================
 # Populate RT with PeerNode class!
+# ================================
 for i in range(MAX_KEY+1):
   peer_to_add = PeerNode(generate_random_bitstring(MAX_KEY, MAX_BIN_DIGITS)) 
+  source_node.routing_table.add_peer(peer_to_add)
   print('\n') 
   print('===========================================================================') 
   print('New Peer: '+str(peer_to_add.node_id)) 
   print('===========================================================================') 
-  routing_table.add_peer(peer_to_add)
   if i == 3:
     peer_to_find = peer_to_add
     print('Peer to find: '+str(peer_to_find.node_id))
 
-
-
-
 # Find Peer within table
+#------------------------
 print('Peer to find: '+str(peer_to_find.node_id))
-
 node_id = peer_to_find.node_id
-peer_node = routing_table.search(node_id)
+peer_node = source_node.routing_table.search(node_id)
 if peer_node != None:
   print('Peer found: '+str(peer_node.node_id))
 else:
-  print()
+  print('Peer not found')
+
+# Delete Peer within table
+#--------------------------
+print('\n')
+print('Delete peer') 
+source_node.routing_table.delete_peer(node_id)
+
+# View source node's final table
+#--------------------------------
+print('\n')
+print('Source Node')
+print('ID: '+str(source_node.node_id))
+print('Routing Table: '+str(source_node.routing_table.bredth_first_search(source_node.routing_table.root)))
 
 
 
-
-
-
-
-# # ===================== 
-# #  Instantiate objects
-# # ===================== 
-# blob = Blob(samples)
-# node = Node(generate_node_binary(4))
-
-
-# populate_table(node.routing_table)
-# # Check out the node's routing table!
-# print(node.routing_table.bin_id)
-# print(node.routing_table.table)
+# ======================== 
+# Encorperate Blob Objects 
+# ======================== 
