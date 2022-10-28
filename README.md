@@ -1,4 +1,4 @@
-# Model Data Availability Sampling
+# Model Danksharding
 
 **Getting Started**
 
@@ -6,16 +6,21 @@ Enter in CLI:
 pip install -r requirements.txt
 
 Working Directory and command to execute:             
-./Model-DAS$     python ./src/main.py
+./Model-Danksharding$     python ./src/main.py
 
 
 
 **Summary** 
-Model DAS is a project that intends to simulate a local (for now) model of Data Availability Sampling.
+Model Danksharding is a project that intends to simulate the architectural designs and logic behind Danksharding.
 
-The major areas of DAS are:
-    - Erasure coding data
-    - Peer to peer networking   
+The major areas of Danksharding are:
+    1. Erasure coding data
+    2. Peer to peer networking   
+
+There will be benchmarks for the different levels of this project.
+Each level increases the scope and complexity of the system.
+For now, the encoding and networking logic is all contained locally.
+
 
 This project is based off of Vitalik's [post](https://hackmd.io/@vbuterin/sharding_proposal).
 
